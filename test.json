@@ -1,0 +1,32 @@
+{
+    "name": "Root", 
+    "children": [
+        {
+            "name": "Bob", 
+            "children": [
+                {
+                    "name": "Leroy"
+                }, 
+                {
+                    "name": "Earl"
+                }
+            ]
+        }, 
+        {
+            "name": "Tom", 
+            "children": [
+                {
+                    "name": "Dick", 
+                    "children": [
+                        {
+                            "name": "Harry"
+                        }
+                    ]
+                }, 
+                {
+                    "name": "Larry"
+                }
+            ]
+        }
+    ]
+}
