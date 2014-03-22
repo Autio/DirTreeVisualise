@@ -1,0 +1,250 @@
+import collections
+import json
+import os
+# The aim is to traverse a folder structure and create a JSON file
+# with the correct hierarchy to be used as input for a D3-library
+# hierarchical tree visualisation
+
+links = []
+def buildLinks(folderList):
+    global links
+    for dir in folderList:
+        parent = ""
+        child = ""
+        for letterIndex in range(len(dir)-1, 1, -1):
+             if dir[letterIndex] == "\\":
+                parent = dir[:letterIndex]
+                child = dir[(letterIndex + 1):]
+                #insertIntoDataStruct(leftSide, rightSide, JsonDict)
+                print "parent: %s | child: %s" % (parent, child)
+                links.append((parent, child))
+                break
+
+def buildLinks2(folderList):
+    global links
+    tempLinks = []
+    d = 0
+    lefts = []
+    for dir in folderList:
+        left = ""
+        d += 1
+        id = 0
+        # find left sides, i.e. path up to current folder
+        for letterIndex in range(len(dir)-1, -1, -1):
+            if dir[letterIndex] == "|":
+                left = dir[:letterIndex]
+                add = True
+                for l in range(0, len(lefts)):
+                    if left == lefts[l][1]:
+                        id = lefts[l][0] #ID for this dir
+                        add = False
+                        break
+                if add:
+                    lefts.append([str(len(lefts)), left])
+                    id = len(lefts)
+                break
+        last = 0
+
+    #cycle through once to establish all directories
+    for dir in folderList:
+        # three parts: c:\test\folder1\subfolder
+        # we want to be able to break the directory down by folders
+        # match it to the right folder id
+        # append the folder and the folder right above it, including the correct IDs
+        s = 0
+        leftID = 0
+        leftSide = ""
+        rightID = 0
+        child = ""
+        n = 0 # count folder depth
+        for index in range(len(dir)-1, 0, -1):
+            if dir[index] == "|":
+                n += 1
+                leftSide = dir[:index]
+                s = index
+                # find the next child folder
+                # child = index to next | or end of string
+                # parent = index to previous | or end of string
+
+                if n == 1:
+                    child = dir[index+1:]
+                else:
+                    nextIndex = 0
+                    for i in range(index + 1, len(dir)):
+                        if dir[i] == "|":
+                            nextIndex = i
+                            break
+                    child = dir[index+1:nextIndex]
+
+                for i in range(0, len(lefts)):
+                    if lefts[i][1] == leftSide:
+                        #print leftSide
+                        leftID = lefts[i][0]
+                        #print id
+                    if lefts[i][1] == leftSide + "|" + child:
+                        rightID = lefts[i][0]
+
+                # parent should be the folder right above the child, keep the right id though
+                a = 0
+                for i in range(index-1, 0, -1):
+                    if dir[i] == "|":
+                        a = i
+                        break
+                #print 'leftside ' + leftSide
+                if a != 0:
+                    fosterParent = dir[a+1:index]
+                else:
+                    fosterParent = dir[a:index]
+                if fosterParent == "":
+                    fosterParent = dir[:index]
+
+                parent = str(leftID) + " " + fosterParent
+
+                #print parent
+                #parent = str(leftID) + " " + leftSide
+                child = str(rightID) + " " + child
+                #print 'parent ' + parent
+                #print 'child ' + child
+                tempLinks.append((parent, child))
+
+
+
+    # the above means that for each folder structure with only one layer of subdirectories after it
+    # we now have IDs
+    # what we now want to ensure is that if the folder structure in a string matches what is in the array
+    # then it gets assigned the correct id
+
+    #print 'LEFTS/n'
+    #print lefts
+    for l in tempLinks:
+        if l not in links:
+            links.append(l)
+    #print 'templinks'
+    #print 'LINKS:\n'
+    #print links
+
+def getFolders(rootDir):
+    global JsonDict
+    global links
+
+    folderList = []
+    dirsChecked = 0
+    dirsChanged = 0
+    dirlist = os.walk(rootDir)
+    for root, dirs, files in dirlist:
+        dirsChecked += 1
+        #print root
+        root = root.replace(rootDir, "")
+        #print root
+        folderList.append(root.replace("\\", "|"))
+    sortedFolders = sorted(folderList)
+    #print sortedFolders
+    buildLinks2(sortedFolders)
+    # json structure
+    # {
+    # "name" : "flare",
+    # "children": [
+    # {
+    # "name" : "cluster",
+    # "children" : [
+    # {"name": "aname", "size" : 0}
+    # ]
+
+    # order and split folder strings
+
+getFolders("c:\\test\\Supporter Development\\")
+
+def makeJSON():
+    global links
+    name_to_node = {}
+    root = {'name': 'Root', 'children': []}
+    for parent, child in links:
+        parent_node = name_to_node.get(parent)
+        if not parent_node:
+            name_to_node[parent] = parent_node = {'name': parent}
+            root['children'].append(parent_node)
+        name_to_node[child] = child_node = {'name': child}
+        parent_node.setdefault('children', []).append(child_node)
+
+   # print json.dumps(root, indent=4)
+    Resultfile = open("C:\\test\\dirtree\\DirTreeVisualise-master\\test.json", 'w')
+    #data = json.dumps(root, sort_keys = True, indent=4)
+    #json.dump(data, Resultfile)
+
+    Resultfile.write(json.dumps(root, indent=4, sort_keys=True))
+    Resultfile.close()
+
+makeJSON()
+print ' done '
+##
+###links = [("Tom","Dick"),("Dick","Harry"),("Tom","Larry"),("Tom", "Harry"),("Bob","Leroy"),("Bob","Earl")]
+##parents, children = zip(*links)
+##root_nodes = {x for x in parents if x not in children}
+##for node in root_nodes:
+##    links.append(('Root', node))
+##
+##def get_nodes(node):
+##    d = {}
+##    d['name'] = node
+##    children = get_children(node)
+##    if children:
+##        d['children'] = [get_nodes(child) for child in children]
+##    return d
+##
+##def get_children(node):
+##    return [x[1] for x in links if x[0] == node]
+##
+##def makefile():
+##    tree = get_nodes('Root')
+##    #x = json.dumps(tree, indent=4)
+##    
+##    
+##    Resultfile = open("C:\\test\\sdev.json", 'w')
+##    json.dump(tree, Resultfile)
+##        
+##    #for line in x:
+##    #    Resultfile.write(x)
+##
+##    print 'done'
+#
+# #makefile()
+#
+#        for letterIndex in range(0, len(dir)):
+#             if dir[letterIndex] == "|":
+#                 n += 1
+#                 left = dir[:letterIndex]
+#                # child = str(id) + " " + left
+#                 #print left
+#                 for i in range(0, len(lefts)):
+#                     if lefts[i][1] == left:
+#                         print lefts[i][1]
+#                         id = lefts[i][0]
+#                         #print id
+#                 # print letterIndex
+#                 if n == 1:
+#                     parent = str(id) + " " + dir[0:letterIndex]
+#                     s = letterIndex + 1
+#                 if n == 2:
+#                     e = letterIndex
+#                     child = str(id) + " " + dir[s:e]
+#                     s = e + 1
+#                 elif n > 2:
+#                     parent = child
+#                     child = str(id) + " " + dir[s:letterIndex]
+#                     s = letterIndex + 1
+#
+#                 if parent != "" and child != "" and parent != child:
+#                     if ((parent, child)) not in links:
+#                         tempLinks.append((parent, child))
+#                 last = letterIndex
+#
+#         parent = child
+#         for i in range(0, len(lefts)):
+#             if lefts[i][1] == parent:
+#                 id = lefts[i][0]
+#         right = str(id) + " " + dir[last+1:]
+#
+#         child = right
+#         if parent != "" and child != "" and parent != child:
+#             if ((parent, child)) not in links:
+#                 tempLinks.append((parent, child))
