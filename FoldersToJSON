@@ -2,6 +2,7 @@
 import collections
 import json
 import os
+import Tkinter, Tkconstants, tkFileDialog
 # The aim is to traverse a folder structure and create a JSON file
 # with the correct hierarchy to be used as input for a D3-library
 # hierarchical tree visualisation
@@ -131,7 +132,7 @@ def getFolders(rootDir):
     # {"name": "aname", "size" : 0}
     # ]
     
-def makeJSON():
+def makeJSON(location):
     global links
     name_to_node = {}
     root = {'name': 'Root', 'children': []}
@@ -153,14 +154,50 @@ def makeJSON():
         name_to_node[child] = child_node = {'name': childName}
         parent_node.setdefault('children', []).append(child_node)
 
-    Resultfile = open("C:\\test\\dirtree\\DirTreeVisualise-master\\FolderTree.json", 'w')
+    Resultfile = open(location + "FolderTree.json", 'w')
     Resultfile.write(json.dumps(root, indent=4, sort_keys=True))
     Resultfile.close()
 
-print 'Getting ready to get folders'
-getFolders("G:\\Central FR\\Change Management\\Supporter Development\\") # TODO Allow for custom folder entry
-print 'Folders gotten'
-print 'Preparing JSON file'
-makeJSON()
-print 'JSON file prepared'
-print 'Goodbye'
+def mainWork():
+    global rootDir
+    print 'Getting ready to get folders'
+
+    getFolders(rootDir)
+
+    print 'Folders gotten'
+    print 'Preparing JSON file'
+
+    makeJSON(rootDir)
+
+    print 'JSON file prepared in %s.' % rootDir
+    print 'Goodbye'
+
+rootDir = ""
+
+class TkFileDialog(Tkinter.Frame):
+    def __init__(self, root):
+
+        print "----------------------------------------------------"
+        print ("Folder Structure to JSON file - Petri Autio 2014")
+        print "----------------------------------------------------"
+        print "\nSelect the root directory, and the program will   "
+        print "scan all the subfolders and create a JSON-file with "
+        print "an suitable structure for a D3 visualisation.       "
+        print "The original use case was for a hierarchical tree.\n"
+
+        def getDir():
+            global rootDir
+            rootDir = str(tkFileDialog.askdirectory(initialdir="C:\\")) + "/"
+            print "Root set to %s" % rootDir
+        Tkinter.Frame.__init__(self, root)
+
+        Tkinter.Button(self, text='Choose Root Folder', command=getDir).pack(fill = Tkinter.X)
+        L1 = Tkinter.Label(self, text="---------")
+        L1.pack(fill=Tkinter.X)
+        Tkinter.Button(self, text='Run', command=mainWork).pack(fill = Tkinter.X)
+
+if __name__=='__main__':
+  root = Tkinter.Tk()
+  root.wm_title("Folder Structure to JSON - Petri Autio 2014")
+  TkFileDialog(root).pack()
+  root.mainloop()
